@@ -79,7 +79,7 @@ model Invite {
 
 model Member {
   id   String @id @default(uuid())
-  role Role
+  role Role   @default(MEMBER)
 
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String       @map("organization_id")
