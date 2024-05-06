@@ -5,14 +5,17 @@ import fastifySwagger from "@fastify/swagger"
 import fastifySwaggerUI from "@fastify/swagger-ui"
 import { ZodTypeProvider, validatorCompiler, serializerCompiler, jsonSchemaTransform } from "fastify-type-provider-zod"
 
+import { errorHandler } from "./error-handler"
+import { getProfile } from "./routes/auth/get-profile"
 import { createAccount } from "./routes/auth/create-account"
 import { authenticateWithpassword } from "./routes/auth/authenticate-with-password"
-import { getProfile } from "./routes/auth/get-profile"
 
 const app = fastify().withTypeProvider<ZodTypeProvider>()
 
 app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
+
+app.setErrorHandler(errorHandler)
 
 app.register(fastifySwagger, {
   openapi: {
