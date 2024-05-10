@@ -10,7 +10,7 @@ import { UnauthorizedError } from "../_errors/unauthorized-error";
 import { getUserPermissions } from "@/utils/get-user-permissions";
 
 export function updateOrganization(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().register(auth).post('/organizations/:slug', {
+  app.withTypeProvider<ZodTypeProvider>().register(auth).put('/organizations/:slug', {
     schema: {
       tags: ['Organizations'],
       summary: 'Update organization details',
