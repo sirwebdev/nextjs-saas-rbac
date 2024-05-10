@@ -11,6 +11,7 @@ import { billingSubject } from "./subjects/billing";
 
 
 export * from "./models"
+export * from "./roles"
 
 const appAbilitiesSchema = z.union([
   projectSubject,
