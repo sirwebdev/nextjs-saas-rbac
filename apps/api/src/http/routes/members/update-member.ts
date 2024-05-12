@@ -1,24 +1,27 @@
 import z from "zod";
 import { FastifyInstance } from "fastify";
-import { projectSchema } from "@saas/auth";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/http/middlewares/auth";
 
+import { BadRequestError } from "../_errors/bad-request-error";
 import { getUserPermissions } from "@/utils/get-user-permissions";
 import { UnauthorizedError } from "../_errors/unauthorized-error";
-import { BadRequestError } from "../_errors/bad-request-error";
+import { roleSchema } from "@saas/auth";
 
-export function deleteProject(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().register(auth).delete('/organizations/:slug/projects/:projectId', {
+export function updateMember(app: FastifyInstance) {
+  app.withTypeProvider<ZodTypeProvider>().register(auth).put('/organizations/:slug/members/:memberId', {
     schema: {
-      tags: ['Projects'],
-      summary: 'Delete a project',
+      tags: ['Members'],
+      summary: 'Update a member',
       security: [{ bearerAuth: [] }],
+      body: z.object({
+        role: roleSchema
+      }),
       params: z.object({
         slug: z.string(),
-        projectId: z.string()
+        memberId: z.string()
       }),
       response: {
         204: z.null()
@@ -26,28 +29,33 @@ export function deleteProject(app: FastifyInstance) {
     }
   },
     async (request, reply) => {
-      const { slug, projectId } = request.params
+      const { slug, memberId } = request.params
 
       const userId = await request.getCurrentUserId()
       const { organization, membership } = await request.getUserMembership(slug)
 
-      const project = await prisma.projects.findUnique({
+      const member = await prisma.member.findUnique({
         where: {
-          id: projectId,
+          id: memberId,
           organizationId: organization.id
-        },
+        }
       })
 
-      if (!project) throw new BadRequestError('Project not found.')
+      if (!member) throw new BadRequestError('Member not found.')
 
       const { cannot } = getUserPermissions(userId, membership.role)
-      const authProject = projectSchema.parse(project)
 
-      if (cannot('delete', authProject)) throw new UnauthorizedError(`You're not allowed to delete this project.`)
+      if (cannot('update', 'User')) throw new UnauthorizedError(`You're not allowed to update this member.`)
 
-      await prisma.projects.delete({
+      const { role } = request.body
+
+      await prisma.member.update({
         where: {
-          id: project.id
+          id: member.id,
+          organizationId: organization.id
+        },
+        data: {
+          role
         }
       })
 
