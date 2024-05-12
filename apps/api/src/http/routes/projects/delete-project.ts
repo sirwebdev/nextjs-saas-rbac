@@ -11,7 +11,7 @@ import { UnauthorizedError } from "../_errors/unauthorized-error";
 import { BadRequestError } from "../_errors/bad-request-error";
 
 export function deleteProject(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().register(auth).post('/organizations/:slug/projects', {
+  app.withTypeProvider<ZodTypeProvider>().register(auth).delete('/organizations/:slug/projects/:projectId', {
     schema: {
       tags: ['Projects'],
       summary: 'Delete a project',
