@@ -6,21 +6,19 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/http/middlewares/auth";
 import { getUserPermissions } from "@/utils/get-user-permissions";
 import { UnauthorizedError } from "../_errors/unauthorized-error";
-import { BadRequestError } from "../_errors/bad-request-error";
 
-export function getProject(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().register(auth).get('/organizations/:orgSlug/projects/:projectSlug', {
+export function getProjects(app: FastifyInstance) {
+  app.withTypeProvider<ZodTypeProvider>().register(auth).get('/organizations/:slug/projects', {
     schema: {
       tags: ['Projects'],
-      summary: 'Get a project details',
+      summary: 'Get all organization projects',
       security: [{ bearerAuth: [] }],
       params: z.object({
-        orgSlug: z.string(),
-        projectSlug: z.string()
+        slug: z.string(),
       }),
       response: {
         200: z.object({
-          project: z.object({
+          projects: z.array(z.object({
             id: z.string().uuid(),
             name: z.string(),
             description: z.string(),
@@ -33,24 +31,24 @@ export function getProject(app: FastifyInstance) {
               name: z.string().nullable(),
               avatarUrl: z.string().nullable(),
             }),
-          })
+            createdAt: z.date()
+          }))
         })
       }
     }
   },
     async (request, reply) => {
-      const { orgSlug, projectSlug } = request.params
+      const { slug } = request.params
 
       const userId = await request.getCurrentUserId()
-      const { organization, membership } = await request.getUserMembership(orgSlug)
+      const { organization, membership } = await request.getUserMembership(slug)
 
       const { cannot } = getUserPermissions(userId, membership.role)
 
-      if (cannot('get', 'Project')) throw new UnauthorizedError(`You're not allowed to see this projects.`)
+      if (cannot('get', 'Project')) throw new UnauthorizedError(`You're not allowed to see organization projects.`)
 
-      const project = await prisma.projects.findUnique({
+      const projects = await prisma.projects.findMany({
         where: {
-          slug: projectSlug,
           organizationId: organization.id
         },
         select: {
@@ -67,16 +65,13 @@ export function getProject(app: FastifyInstance) {
               name: true,
               avatarUrl: true
             }
-          }
-
-
+          },
+          createdAt: true
         }
       })
 
-      if (!project) throw new BadRequestError('Project not found.')
-
       return reply.send({
-        project
+        projects
       })
     }
   )

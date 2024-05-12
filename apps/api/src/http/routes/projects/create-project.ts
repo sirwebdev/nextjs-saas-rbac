@@ -13,6 +13,7 @@ export function createProject(app: FastifyInstance) {
     schema: {
       tags: ['Projects'],
       summary: 'Create a new project',
+      security: [{ bearerAuth: [] }],
       body: z.object({
         name: z.string(),
         description: z.string()
